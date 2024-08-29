@@ -5,14 +5,14 @@ import pyarrow
 import numpy
 import spinetoolbox as toolbox
 import yaml
-#import cProfile
+# import cProfile
 import copy
 import csv
 from collections import defaultdict
 
 
 def add_node_technology(target_db):
-    with open(path + "Sets_Node.tab") as csv_file:
+    with open(tab_files_path + "Sets_Node.tab") as csv_file:
         csv_reader = csv.reader(csv_file, dialect='excel-tab')
         first_line = True
         nodes = []
@@ -20,7 +20,7 @@ def add_node_technology(target_db):
             if not first_line:
                 nodes.append(row[0])
             first_line = False
-    with open(path + "Sets_Technology.tab") as csv_file:
+    with open(tab_files_path + "Sets_Technology.tab") as csv_file:
         csv_reader = csv.reader(csv_file, dialect='excel-tab')
         first_line = True
         technologies = []
@@ -51,7 +51,7 @@ def add_seasons(target_db):
         print("Failed to add Season entity_class")
     for season in seasons:
         added, error = target_db.add_entity_item(entity_class_name="Season",
-                                                 entity_byname=(season, ))
+                                                 entity_byname=(season,))
         if error:
             print("Failed to add season entity " + season + " due to error " + error)
     target_db.commit_session("Added seasons")
@@ -61,7 +61,7 @@ def add_seasons(target_db):
 def add_sets(target_db, set_list):
     for set_name, set_dimens in set_list.items():
         tab_file = "Sets_" + set_name + ".tab"
-        with open(path + tab_file) as csv_file:
+        with open(tab_files_path + tab_file) as csv_file:
             csv_reader = csv.reader(csv_file, dialect='excel-tab')
             first_line = True
             if len(set_dimens) == 1:
@@ -100,15 +100,16 @@ def add_sets(target_db, set_list):
 def add_params(target_db, param_listing):
     for type_name, type_params in param_listing.items():
         for param_name, param_dimens in type_params.items():
-            added, updated, error = target_db.add_update_parameter_definition_item(entity_class_name='__'.join(param_dimens[0]),
-                                                                                   name=param_name)
+            added, updated, error = target_db.add_update_parameter_definition_item(
+                entity_class_name='__'.join(param_dimens[0]),
+                name=param_name)
             if error:
                 print("Failed to add parameter " + param_name + " due to " + error)
             nr_dimensions = len(param_dimens[0])
             data = defaultdict(list)
             header = defaultdict(list)
             tab_file = type_name + "_" + param_name + ".tab"
-            with open(path + tab_file) as csv_file:
+            with open(tab_files_path + tab_file) as csv_file:
                 csv_reader = csv.reader(csv_file, dialect='excel-tab')
                 first_line = True
                 for row in csv_reader:
@@ -142,24 +143,18 @@ def add_params(target_db, param_listing):
     return target_db
 
 
-
-# if len(sys.argv) < 2:
-#     exit("You need to provide the name (and possibly path) of the settings file as an argument")
-# with open(sys.argv[1], 'r') as yaml_file:
-#     settings = yaml.safe_load(yaml_file)
-# dimens_to_param = settings["dimens_to_param"]
-# class_for_scalars = settings["class_for_scalars"]
-# url_db = settings["target_db"]
-# file = open(settings["model_data"])
-# alternative_name = settings["alternative_name"]
-# entities_from_entities = settings["entities_from_entities"]
-# read_separate_csv = settings["read_separate_csv"]
-
-# if len(sys.argv) > 2:
-#url_db = sys.argv[1]
-url_db = "sqlite:///C:/data/Toolbox_projects/EMIRE_import/EMPIRE_data.sqlite"
-path = "C:/data/Toolbox_projects/EMIRE_import/tab_files/"
-alternative_name = "base"
+if len(sys.argv) > 1:
+    url_db = sys.argv[1]
+else:
+    exit("Please give target database url as the first argument and the path to input file folder as second argument")
+if len(sys.argv) > 2:
+    tab_files_path = sys.argv[2]
+else:
+    exit("Please give target database url as the first argument and the path to input file folder as second argument")
+if len(sys.argv) > 3:
+    alternative_name = sys.argv[3]
+else:
+    alternative_name = "base"
 
 with open('param_dimens.yaml', 'r') as yaml_file:
     param_listing = yaml.safe_load(yaml_file)
