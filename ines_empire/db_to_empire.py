@@ -21,6 +21,7 @@ def write_params(source_db, param_listing):
     for type_name, type_params in param_listing.items():
         for param_name, param_dimens in type_params.items():
             tab_file = type_name + "_" + param_name + ".tab"
+            print("!!! " + param_name)
             with open(tab_files_path + tab_file, 'w+', newline="") as csv_file:
                 if len(param_dimens) > 1:
                     header = param_dimens[0] + param_dimens[1:]
@@ -34,13 +35,13 @@ def write_params(source_db, param_listing):
                     for param in source_db.get_parameter_value_items(entity_class_name='__'.join(param_dimens[0]),
                                                                      entity_byname=entity["entity_byname"],
                                                                      parameter_definition_name=param_name):
-                        if param:
-                            param_value = api.from_database(param["value"], param["type"])
-                            if len(param_dimens) > 1:
-                                for i, index in enumerate(param_value.indexes):
-                                    csv_writer.writerow(entity["entity_byname"] + (index,) + (str(param_value.values[i]),))
-                            else:
-                                csv_writer.writerow(entity["entity_byname"] + (str(param_value),))
+                        print(entity["name"])
+                        param_value = api.from_database(param["value"], param["type"])
+                        if len(param_dimens) > 1:
+                            for i, index in enumerate(param_value.indexes):
+                                csv_writer.writerow(entity["entity_byname"] + (index,) + (str(param_value.values[i]),))
+                        else:
+                            csv_writer.writerow(entity["entity_byname"] + (str(param_value),))
 
 
 if len(sys.argv) > 1:
