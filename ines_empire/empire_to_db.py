@@ -8,7 +8,31 @@ import yaml
 # import cProfile
 import copy
 import csv
+import pandas as pd
 from collections import defaultdict
+
+
+def add_sampling_key(target_db):
+    data = pd.read_csv(tab_files_path + "sampling_key.csv", index_col=[0, 1, 2, 3], skipinitialspace=True)
+    year_index = data.index.get_level_values(3)
+    data = data.droplevel(3)
+
+    ind = pd.MultiIndex.from_product([level.values for level in data.index.levels])
+    fulldf = pd.DataFrame(-1, columns=data.columns, index=ind)
+    fulldf.update(data)
+    shape = [len(level) for level in fulldf.index.levels]
+    ncol = fulldf.shape[-1]
+    if ncol > 1:
+        shape.append(ncol)
+    foo = fulldf.to_numpy().reshape(shape)
+
+    #for
+    #print(foo)
+    # with open(tab_files_path + "sampling_key.csv") as csv_file:
+    #     csv_reader = csv.reader(csv_file)
+    #     first_line = True
+    #     horizon = {}
+    #     nodes = []
 
 
 def add_node_technology(target_db):
@@ -176,3 +200,4 @@ with DatabaseMapping(url_db) as target_db:
     target_db = add_sets(target_db, set_list)
     target_db = add_node_technology(target_db)
     target_db = add_params(target_db, param_listing)
+    #target_db = add_sampling_key(target_db)
