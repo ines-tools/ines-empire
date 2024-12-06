@@ -1,12 +1,8 @@
 import spinedb_api as api
 from spinedb_api import DatabaseMapping
 import sys
-import pyarrow
-import numpy
-import spinetoolbox as toolbox
 import yaml
 # import cProfile
-import copy
 import csv
 import pandas as pd
 from collections import defaultdict
@@ -149,7 +145,7 @@ def add_params(target_db, param_listing):
                 if header[entity_byname]:
                     headers = header[entity_byname]
                     data_map = api.Map(indexes=headers,
-                                       values=values,
+                                       values=float(values),
                                        index_name="horizon")
                     p_value, p_type = api.to_database(data_map)
                 else:

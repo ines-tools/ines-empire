@@ -3,6 +3,7 @@ from spinedb_api import DatabaseMapping
 import sys
 import yaml
 import csv
+from pathlib import Path
 
 #data = pd.read_csv(tab_files_path + "sampling_key.csv", sep="\t", header=[0, 1, 2, 3], engine='pyarrow')
 
@@ -11,11 +12,21 @@ def write_sets(source_db, set_list):
     print("Writing sets..")
     for set_name, set_dimens in set_list.items():
         print(set_name)
-        entities = source_db.get_entity_items(entity_class_name='__'.join(set_dimens))
+        if len(set_dimens) < 2:
+            entities = source_db.get_entity_items(entity_class_name=set_name)
+        else:
+            entities = source_db.get_entity_items(entity_class_name='__'.join(set_dimens))
         tab_file = "Sets_" + set_name + ".tab"
         with open(tab_files_path + tab_file, 'w+', newline='') as csv_file:
             csv_writer = csv.writer(csv_file, dialect='excel-tab')
-            csv_writer.writerow(set_dimens)
+            if len(set_dimens) == 1:
+                csv_writer.writerow(set_dimens)
+            elif len(set_dimens) == 2:
+                csv_writer.writerow("Source:_-\tUnnamed:_1")
+            elif len(set_dimens) == 3:
+                csv_writer.writerow("Source:_-\tUnnamed:_1\tUnnamed:_2")
+            else:
+                sys.exit("More than 2 set_dimens not functional. Fix the code.")
             for entity in entities:
                 csv_writer.writerow(entity["entity_byname"])
     print("")
@@ -28,12 +39,15 @@ def write_params(source_db, param_listing):
             tab_file = type_name + "_" + param_name + ".tab"
             print(param_name)
             with open(tab_files_path + tab_file, 'w+', newline="") as csv_file:
-                if len(param_dimens) > 1:
-                    header = param_dimens[0] + param_dimens[1:]
-                else:
-                    header = param_dimens[0]
+                header = []
+                header.append("Source:_Toolbox")
+                header.append(f"{param_dimens[0][0]}:_1")
+                if len(param_dimens[0]) > 1:
+                    header.append(f"{param_dimens[0][1]}:_2")
+                for i in range(len(param_dimens) - 1):
+                    header.append(f"{param_dimens[i + 1]}:_{i + len(param_dimens[0]) + 1}")
                 csv_writer = csv.writer(csv_file, dialect='excel-tab')
-                csv_writer.writerow(header)
+                csv_writer.writerow(tuple(header))
 
                 for param in source_db.get_parameter_value_items(entity_class_name='__'.join(param_dimens[0]),
                                                                  parameter_definition_name=param_name):
@@ -53,6 +67,8 @@ if len(sys.argv) > 2:
     tab_files_path = sys.argv[2]
 else:
     exit("Please give source database url as the first argument and the path to output folder as second argument")
+
+Path(tab_files_path).mkdir(parents=True, exist_ok=True)
 
 with open('param_dimens.yaml', 'r') as yaml_file:
     param_listing = yaml.safe_load(yaml_file)
