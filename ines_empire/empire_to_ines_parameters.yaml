@@ -1,0 +1,22 @@
+# source_entity_class:
+#   target_entity_class:
+#     source_parameter:
+#       target_parameter OR 
+#       [target_parameter, optional multiplier, [optional list of dimension positions]]
+
+REGION__TECHNOLOGY:
+  unit:
+    DiscountRateIdv: [interest_rate, 1, [[1, 2]]]
+    OperationalLife: [lifetime, 1, [[1, 2]]] 
+#  unit__to_node:
+REGION__FUEL:
+  node:
+    AccumulatedAnnualDemand: [flow_annual, -277777.78, [[1, 2]]]
+    SpecifiedAnnualDemand: [flow_annual, 277777.78, [[1, 2]]]
+REGION__STORAGE:
+  node:
+    CapitalCostStorage: [storage_investment_cost, 0.114155, [[1,2]]]
+    DiscountRateStorage: [storage_interest_rate, 1, [[1,2]]]
+    OperationalLifeStorage: [storage_lifetime, 1, [[1,2]]]
+    ResidualStorageCapacity: [storages_existing, 8.76, [[1,2]]]
+
