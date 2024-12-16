@@ -28,11 +28,9 @@ with open('empire_to_ines_methods.yaml', 'r') as file:
     parameter_methods = yaml.load(file, yaml.BaseLoader)
 with open('empire_to_ines_entities_to_parameters.yaml', 'r') as file:
     entities_to_parameters = yaml.load(file, yaml.BaseLoader)
-# with open('settings.yaml', 'r') as file:
-#     settings = yaml.safe_load(file)
-# unlimited_unit_capacity = float(settings["unlimited_unit_capacity"])
-# default_unit_size = float(settings["default_unit_size"])
-# unit_to_penalty_boundary = float(settings["unit_to_penalty_boundary"])
+# with open('empire_to_ines_defaults.yaml', 'r') as file:
+#     defaults = yaml.safe_load(file)
+# default_unit_size = float(defaults["default_unit_size"])
 
 
 def main():
