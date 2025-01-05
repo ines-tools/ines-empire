@@ -145,7 +145,7 @@ def add_params(target_db, param_listing):
                 if header[entity_byname]:
                     headers = header[entity_byname]
                     data_map = api.Map(indexes=headers,
-                                       values=float(values),
+                                       values=[float(x) for x in values],
                                        index_name="horizon")
                     p_value, p_type = api.to_database(data_map)
                 else:
