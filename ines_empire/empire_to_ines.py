@@ -41,13 +41,17 @@ def main():
             source_db = ines_initialize.fetch_data(source_db)
             target_db = ines_initialize.copy_alternatives_scenarios(source_db, target_db)
 
-            ## Copy entites
+            ## Copy entities
             target_db = ines_transform.copy_entities(source_db, target_db, entities_to_copy)
             ## Create hard-coded generator types appropriately
             target_db = create_generator_entities(source_db, target_db)
             ## Copy numeric parameters(source_db, target_db, parameter_transforms)
-            target_db = ines_transform.transform_parameters_use_default(source_db, target_db, parameter_transforms,
-                                                                        default_alternative="base", ts_to_map=True)
+            target_db = ines_transform.transform_parameters(source_db,
+                                                            target_db,
+                                                            parameter_transforms,
+                                                            use_default=False,
+                                                            default_alternative="base",
+                                                            ts_to_map=True)
             ## Copy method parameters
             target_db = ines_transform.process_methods(source_db, target_db, parameter_methods)
             ## Copy entities to parameters

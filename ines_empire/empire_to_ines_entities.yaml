@@ -3,12 +3,15 @@
 #  list of target_entity_classes: 
 #    optional [list  of dimenstion positions] OR
 #    optional [list of dimension positions, [optional] {source_feature: source_method} or source_feature]
-Node__Generator: 
-  - unit: [[1, 2]]
-Horizon: period
 Node: node
+Horizon: period
 Storage: node
 Technology: set
+Generator:
+  - node: [[1], CO2Content]
+Node__Generator:
+  - unit: [[1, 2]]
+  - unit__to_node: [[1, 2], [1]]
 
 # REGION__FUEL: 
 #   - node: [[1, 2]]

@@ -1,0 +1,14 @@
+# source_entity_class: target_entity_class OR
+# source_entity_class: 
+#  list of target_entity_classes: 
+#    optional [list  of dimenstion positions] OR
+#    optional [list of dimension positions, [optional] {source_feature: source_method} or source_feature]
+node: node
+storage: node
+genType: set
+node__genType:
+  - unit: [[1, 2]]
+  - unit__to_node: [[1, 2], [1]]
+node__node:
+  - link: [[1, 2]]
+

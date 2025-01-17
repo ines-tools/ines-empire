@@ -1,0 +1,38 @@
+# source_entity_class:
+#   target_entity_class:
+#     source_parameter:
+#       target_parameter OR 
+#       [target_parameter, optional multiplier, [optional list of dimension positions]]
+
+node__genType:
+  unit:
+    genInstalledCapMW: 
+      target: [existing, 1, [[1, 2]]]
+      operation: divide
+      with: 1000
+    genInvCap_MW: 
+      target: [invested, 1, [[1, 2]]]
+      operation: divide
+      with: 1000
+  unit__to_node:
+    genInstalledCapMW: 
+      target: [capacity, 1, [[1, 2], [1]]]
+      operation: constant
+      with: 1000
+    genInvCap_MW:
+      target: [capacity, 1, [[1, 2], [1]]]
+      operation: constant
+      with: 1000
+
+#  unit__to_node:
+# REGION__FUEL:
+#  node:
+#    AccumulatedAnnualDemand: [flow_annual, -277777.78, [[1, 2]]]
+#    SpecifiedAnnualDemand: [flow_annual, 277777.78, [[1, 2]]]
+#REGION__STORAGE:
+#  node:
+#    CapitalCostStorage: [storage_investment_cost, 0.114155, [[1,2]]]
+#    DiscountRateStorage: [storage_interest_rate, 1, [[1,2]]]
+#    OperationalLifeStorage: [storage_lifetime, 1, [[1,2]]]
+#    ResidualStorageCapacity: [storages_existing, 8.76, [[1,2]]]
+

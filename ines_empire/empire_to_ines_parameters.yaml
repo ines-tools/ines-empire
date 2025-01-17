@@ -4,19 +4,31 @@
 #       target_parameter OR 
 #       [target_parameter, optional multiplier, [optional list of dimension positions]]
 
-REGION__TECHNOLOGY:
+Node:
+  node:
+    ElectricAnnualDemand: [flow_annual, -1, [[1]]]
+    NodeLostLoadCost: [penalty_upward, 1, [[1]]]
+Node__Generator:
   unit:
-    DiscountRateIdv: [interest_rate, 1, [[1, 2]]]
-    OperationalLife: [lifetime, 1, [[1, 2]]] 
-#  unit__to_node:
-REGION__FUEL:
+    RefInitialCap:
+      target: [units_existing, 1, [[1, 2]]]
+      operation: divide
+      with: 1000
+  unit__to_node:
+    RefInitialCap:
+      target: [capacity, 1, [[1, 2], [1]]]
+      operation: constant
+      with: 1000
+Generator:
   node:
-    AccumulatedAnnualDemand: [flow_annual, -277777.78, [[1, 2]]]
-    SpecifiedAnnualDemand: [flow_annual, 277777.78, [[1, 2]]]
-REGION__STORAGE:
-  node:
-    CapitalCostStorage: [storage_investment_cost, 0.114155, [[1,2]]]
-    DiscountRateStorage: [storage_interest_rate, 1, [[1,2]]]
-    OperationalLifeStorage: [storage_lifetime, 1, [[1,2]]]
-    ResidualStorageCapacity: [storages_existing, 8.76, [[1,2]]]
-
+    CO2Content: 
+      target: [co2_content, 3.6, [[1]]]
+  unit__to_node:
+    CapitalCosts:
+      target: [investment_cost, 1, [[1]]]
+      for_each: [Node, [[1], [1]]]  # Taking first dimension of Node, insert it into first position of
+                                    # entity_byname_tuple as the first name part (push original to second).
+                                    # Then also insert it as a second dimension (just Node name).
+    
+Node__Technology:
+  set:
