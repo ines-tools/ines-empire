@@ -1,12 +1,9 @@
 import spinedb_api as api
 from spinedb_api import DatabaseMapping
+from sqlalchemy.exc import DBAPIError
+from spinedb_api.exception import NothingToCommit
 import sys
-import pyarrow
-import numpy
-import spinetoolbox as toolbox
 import yaml
-# import cProfile
-import copy
 import csv
 import pandas as pd
 from collections import defaultdict
@@ -84,15 +81,21 @@ def add_seasons(target_db):
 
 def add_sets(target_db, set_list):
     for set_name, set_dimens in set_list.items():
-        tab_file = "Sets_" + set_name + ".tab"
+        tab_file = set_name + ".tab"
+        if set_name[:5] == "Sets_":
+            set_name = set_name[5:]
         with open(tab_files_path + tab_file) as csv_file:
             csv_reader = csv.reader(csv_file, dialect='excel-tab')
             first_line = True
-            if len(set_dimens) == 1:
+            if isinstance(set_dimens, dict):
+                for set_name2, set_dimens2 in set_dimens.items():
+                    added, error = target_db.add_entity_class_item(name=set_name2,
+                                                                   dimension_name_list=tuple(set_dimens2))
+            elif len(set_dimens) == 1:
                 if set_name == set_dimens[0]:
                     added, error = target_db.add_entity_class_item(name='__'.join(set_dimens))
                 else:
-                    added, error = target_db.add_entity_class_item(name=set_name)
+                    added, error = target_db.add_entity_class_item(name=set_dimens[0])
             else:
                 added, error = target_db.add_entity_class_item(name='__'.join(set_dimens),
                                                                dimension_name_list=tuple(set_dimens))
@@ -101,8 +104,9 @@ def add_sets(target_db, set_list):
             for row in csv_reader:
                 if not first_line:
                     entity_byname = tuple(row)
+                    #print(set_name)
                     if len(set_dimens) == 1 and set_name is not set_dimens[0]:
-                        added, error = target_db.add_entity_item(entity_class_name=set_name,
+                        added, error = target_db.add_entity_item(entity_class_name=set_dimens[0],
                                                                  entity_byname=entity_byname)
                     else:
                         added, error = target_db.add_entity_item(entity_class_name='__'.join(set_dimens),
@@ -128,32 +132,46 @@ def add_params(target_db, param_listing):
                 entity_class_name='__'.join(param_dimens[0]),
                 name=param_name)
             if error:
-                print("Failed to add parameter " + param_name + " due to " + error)
+                print("Failed to add parameter definition " + param_name + " due to " + error)
             nr_dimensions = len(param_dimens[0])
-            data = defaultdict(list)
-            header = defaultdict(list)
+            entity_bynames = []
+            data = []
+            header = []
             tab_file = type_name + "_" + param_name + ".tab"
             with open(tab_files_path + tab_file) as csv_file:
                 csv_reader = csv.reader(csv_file, dialect='excel-tab')
                 first_line = True
-                for row in csv_reader:
+                for (i, row) in enumerate(csv_reader):
                     if not first_line:
                         entity_byname = '__'.join(row[:nr_dimensions])
+                        entity_bynames.append(entity_byname)
                         if len(param_dimens) == 2:
-                            header[entity_byname].append(row[-2])
-                            data[entity_byname].append(row[-1])
+                            header[i].append(row[-2])
+                            data[i].append(row[-1])
+                        elif len(param_dimens) == 3:
+                            header[i].append(row[-3])
+                            header[i].append(row[-2])
+                            data[i].append(row[-1])
                         else:
-                            data[entity_byname] = row[-1]
+                            data[i].append(row[-1])
                     first_line = False
-            for entity_byname, values in data.items():
-                if header[entity_byname]:
-                    headers = header[entity_byname]
+            add_entity_flag = False
+            if param_dimens[0][0] == "Horizon":
+                add_entity_flag = True
+            for (i, entity_byname) in entity_bynames():
+                if add_entity_flag:
+                    added, updated, error = target_db.add_update_entity_item(entity_class_name='__'.join(param_dimens[0]),
+                                                                    entity_byname=tuple(entity_byname.split('__')))
+                    if error:
+                        print("Could not add an entity: " + error)
+                if header[i]:
+                    headers = header[i]
                     data_map = api.Map(indexes=headers,
-                                       values=values,
+                                       values=data[i],
                                        index_name="horizon")
                     p_value, p_type = api.to_database(data_map)
                 else:
-                    p_value, p_type = api.to_database(float(values))
+                    p_value, p_type = api.to_database(float(data[i]))
                 added, error = target_db.add_parameter_value_item(entity_class_name='__'.join(param_dimens[0]),
                                                                   entity_byname=tuple(entity_byname.split('__')),
                                                                   parameter_definition_name=param_name,
@@ -163,7 +181,12 @@ def add_params(target_db, param_listing):
                 if error:
                     print("Could not add a parameter: " + error)
             print("Added parameter " + param_name)
-            target_db.commit_session("Added parameter " + param_name)
+            try:
+                target_db.commit_session("Added parameter " + param_name)
+            except NothingToCommit:
+                print(f"No parameter for {param_name} to be committed")
+            except DBAPIError as e:
+                print(e)
     return target_db
 
 
@@ -194,6 +217,7 @@ with DatabaseMapping(url_db) as target_db:
     target_db.add_alternative_item(name=alternative_name)
     target_db.add_scenario_item(name=alternative_name)
     target_db.add_scenario_alternative_item(alternative_name=alternative_name, scenario_name=alternative_name, rank=0)
+    target_db.add_entity_class_item(name="Horizon")
     target_db.commit_session("Added alternative and scenario " + alternative_name)
 
     target_db = add_seasons(target_db)

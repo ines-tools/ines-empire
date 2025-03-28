@@ -48,4 +48,11 @@ Storage:
   StorageDischargeEff: [[Storage]]
   StorageInitialEnergyLevel: [[Storage]]
   StoragePowToEnergy: [[Storage]]
-
+NaturalGas:
+  PipelineCapacity: [[Node, Node], Horizon]
+#  PipelineElectricityUse: [[NaturalGas]]
+  Reserves: [[Node]]
+  StorageCapacity: [[Node]]
+  TerminalCapacity: [[Node, Terminal], Horizon]
+  TerminalCost: [[Node, Terminal], Horizon, Scenario]
+  TerminalCost_stochastic: [[Node, Terminal], Horizon, GasScenario]

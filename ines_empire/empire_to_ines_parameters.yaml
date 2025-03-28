@@ -13,7 +13,7 @@ Node__Generator:
     RefInitialCap:
       target: [units_existing, 1, [[1, 2]]]
       operation: divide
-      with: 1000
+      with: [Node, HydroGenMaxAnnualProduction]
   unit__to_node:
     RefInitialCap:
       target: [capacity, 1, [[1, 2], [1]]]
@@ -30,5 +30,5 @@ Generator:
                                     # entity_byname_tuple as the first name part (push original to second).
                                     # Then also insert it as a second dimension (just Node name).
     
-Node__Technology:
-  set:
+# Node__Technology:
+#   set:
