@@ -30,5 +30,5 @@ Generator:
                                     # entity_byname_tuple as the first name part (push original to second).
                                     # Then also insert it as a second dimension (just Node name).
     
-# Node__Technology:
-#   set:
+#Node__Technology:
+#  set:

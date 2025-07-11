@@ -3,11 +3,82 @@ from spinedb_api import DatabaseMapping
 from sqlalchemy.exc import DBAPIError
 from spinedb_api.exception import NothingToCommit
 import sys
+import os
+import pyarrow
+import numpy
+import spinetoolbox as toolbox
 import yaml
 import csv
 import pandas as pd
 from collections import defaultdict
+from sqlalchemy.exc import DBAPIError
+from spinedb_api.exception import NothingToCommit
 
+
+# Convert to a standard dictionary (optional)
+def convert_to_dict(d):
+    if isinstance(d, defaultdict):
+        return {k: convert_to_dict(v) for k, v in d.items()}
+    return d
+
+def recursively_return_map_old(dict_in, header, level):
+    
+    indexes = list()
+    values = list()
+    for key, dict_values in dict_in.items():
+        if isinstance(dict_values, dict):
+            indexes.append(key)
+            values.append(recursively_return_map_old(dict_values, header, level+1))
+        else:
+            indexes.append(key)
+            values.append(dict_values)
+    out_map = api.Map(indexes=indexes, values=values, index_name=header[level])
+    return out_map
+
+def add_parameters(target_db, data, index, header, entity_class_name, param_name, entity_byname = None):
+    for key, values in data.items():
+        if not entity_byname:
+            entity_byname_out = tuple(key.split('__'))
+        else:
+            entity_byname_out = entity_byname
+        if index[key]:
+            indexes = index[key]
+            if isinstance(indexes[0],list) and len(indexes[0]) > 1:
+                table = list(list())
+                for i, val in enumerate(indexes):
+                    table.append(val + [values[i]])
+
+                # Initialize a nested defaultdict
+                nested_dict = lambda: defaultdict(nested_dict)
+                result = nested_dict()
+
+                # Dynamically populate the nested dictionary
+                for row in table:
+                    *keys, last, value = row  # Unpack all columns except the last as keys, and the last as value
+                    current_level = result
+                    for key in keys:
+                        current_level = current_level[key]  # Traverse or create the nested structure
+                    current_level[last] = value  # Assign the value at the deepest level
+                
+                result = convert_to_dict(result)
+                values = recursively_return_map_old(result,header,0)
+                p_value, p_type = api.to_database(values)
+            else:   
+                values = api.Map(indexes=indexes, values=values, index_name=header[-2])
+                p_value, p_type = api.to_database(values)
+            
+        else:
+            p_value, p_type = api.to_database(float(values))
+        added, error = target_db.add_parameter_value_item(entity_class_name=entity_class_name,
+                                                        entity_byname=entity_byname_out,
+                                                        parameter_definition_name=param_name,
+                                                        alternative_name=alternative_name,
+                                                        type=p_type,
+                                                        value=p_value)
+        if error:
+            print("Could not add a parameter: " + error)
+
+    return target_db
 
 def add_sampling_key(target_db):
     data = pd.read_csv(tab_files_path + "sampling_key.csv", index_col=[0, 1, 2, 3], skipinitialspace=True)
@@ -22,15 +93,6 @@ def add_sampling_key(target_db):
     if ncol > 1:
         shape.append(ncol)
     foo = fulldf.to_numpy().reshape(shape)
-
-    #for
-    #print(foo)
-    # with open(tab_files_path + "sampling_key.csv") as csv_file:
-    #     csv_reader = csv.reader(csv_file)
-    #     first_line = True
-    #     horizon = {}
-    #     nodes = []
-
 
 def add_node_technology(target_db):
     with open(tab_files_path + "Sets_Node.tab") as csv_file:
@@ -78,115 +140,253 @@ def add_seasons(target_db):
     target_db.commit_session("Added seasons")
     return target_db
 
+def add_sets_directly(target_db):
+    
+    added, error = target_db.add_entity_class_item(name='General')
+    added, error = target_db.add_entity_item(entity_class_name='General', entity_byname=('General',))
+    added, error = target_db.add_entity_class_item(name='CO2')
+    added, error = target_db.add_entity_item(entity_class_name='CO2', entity_byname=('CO2',))
+    added, error = target_db.add_entity_class_item(name='HydrogenStorageNode')
+    #added, error = target_db.add_entity_class_item(name='CO2SequestrationNodes')
 
-def add_sets(target_db, set_list):
-    for set_name, set_dimens in set_list.items():
-        tab_file = set_name + ".tab"
-        if set_name[:5] == "Sets_":
-            set_name = set_name[5:]
-        with open(tab_files_path + tab_file) as csv_file:
+    """
+    if os.path.isfile(tab_files_path + "CO2_CO2SequestrationNodes.tab"):
+        with open(tab_files_path + "CO2_CO2SequestrationNodes.tab") as csv_file:
             csv_reader = csv.reader(csv_file, dialect='excel-tab')
             first_line = True
-            if isinstance(set_dimens, dict):
-                for set_name2, set_dimens2 in set_dimens.items():
-                    added, error = target_db.add_entity_class_item(name=set_name2,
-                                                                   dimension_name_list=tuple(set_dimens2))
-            elif len(set_dimens) == 1:
-                if set_name == set_dimens[0]:
-                    added, error = target_db.add_entity_class_item(name='__'.join(set_dimens))
-                else:
-                    added, error = target_db.add_entity_class_item(name=set_dimens[0])
-            else:
-                added, error = target_db.add_entity_class_item(name='__'.join(set_dimens),
-                                                               dimension_name_list=tuple(set_dimens))
-            if error:
-                print("error adding entity_classes (set): " + error)
             for row in csv_reader:
                 if not first_line:
-                    entity_byname = tuple(row)
-                    #print(set_name)
-                    if len(set_dimens) == 1 and set_name is not set_dimens[0]:
-                        added, error = target_db.add_entity_item(entity_class_name=set_dimens[0],
-                                                                 entity_byname=entity_byname)
-                    else:
-                        added, error = target_db.add_entity_item(entity_class_name='__'.join(set_dimens),
-                                                                 entity_byname=entity_byname)
+                    entity_byname = (row[0],)
+                    added, error = target_db.add_entity_item(entity_class_name='CO2SequestrationNodes', entity_byname=entity_byname)
                     if error:
                         print("error adding entity (set members): " + error)
-                    if len(entity_byname) == 1 and set_name is set_dimens[0]:
-                        added, error = target_db.add_entity_alternative_item(entity_class_name='__'.join(set_dimens),
-                                                                             entity_byname=entity_byname,
-                                                                             alternative_name=alternative_name)
-                        if error:
-                            print("error adding entity_alternative: " + error)
-
+                else:
+                    header = row
                 first_line = False
+    """
+    if os.path.isfile(tab_files_path + "Hydrogen_StorageMaxCapacity.tab"):
+        with open(tab_files_path + "Hydrogen_StorageMaxCapacity.tab") as csv_file:
+            csv_reader = csv.reader(csv_file, dialect='excel-tab')
+            first_line = True
+            for row in csv_reader:
+                if not first_line:
+                    entity_byname = (row[0],)
+                    added, error = target_db.add_entity_item(entity_class_name='HydrogenStorageNode', entity_byname=entity_byname)
+                    if error:
+                        print("error adding entity (set members): " + error)
+                else:
+                    header = row
+                first_line = False
+
+    return target_db
+
+def add_sets(target_db, set_list):
+    for set_header, set_names in set_list.items():
+        for set_name, set_dimens in set_names.items():
+            tab_file = set_header + "_" + set_name + ".tab"
+            if os.path.isfile(tab_files_path + tab_file):
+                with open(tab_files_path + tab_file) as csv_file:
+                    csv_reader = csv.reader(csv_file, dialect='excel-tab')
+                    first_line = True
+                    if len(set_dimens) == 1:
+                        if set_name == set_dimens[0]:
+                            added, error = target_db.add_entity_class_item(name='__'.join(set_dimens))
+                        else:
+                            added, error = target_db.add_entity_class_item(name=set_name)
+                    else:
+                        added, error = target_db.add_entity_class_item(name='__'.join(set_dimens),
+                                                                    dimension_name_list=tuple(set_dimens))
+                    if error:
+                        print("error adding entity_classes (set): " + error)
+                    for row in csv_reader:
+                        if not first_line:
+                            entity_byname = tuple(row)
+                            if len(set_dimens) == 1 and set_name is not set_dimens[0]:
+                                added, error = target_db.add_entity_item(entity_class_name=set_name,
+                                                                        entity_byname=entity_byname)
+                            else:
+                                added, error = target_db.add_entity_item(entity_class_name='__'.join(set_dimens),
+                                                                        entity_byname=entity_byname)
+                            if error:
+                                print("error adding entity (set members): " + error)
+                            if len(entity_byname) == 1 and set_name is set_dimens[0]:
+                                added, error = target_db.add_entity_alternative_item(entity_class_name='__'.join(set_dimens),
+                                                                                    entity_byname=entity_byname,
+                                                                                    alternative_name=alternative_name)
+                                if error:
+                                    print("error adding entity_alternative: " + error)
+
+                        first_line = False
     target_db.commit_session("Added sets")
     return target_db
 
+def add_relationships_from_capacity(target_db):
+    params_dict = dict()
+    params_dict["Industry_Ammonia_InitialCapacity"] = ["AmmoniaProducers", "AmmoniaProductionPlants"]
+    params_dict["Industry_Cement_InitialCapacity"] = ["CementProducers", "CementProductionPlants"]
+    params_dict["Industry_Steel_InitialCapacity"] = ["SteelProducers", "SteelProductionPlants"]
+
+    for param_name, param_dimens in params_dict.items():
+        added, error = target_db.add_entity_class_item(name='__'.join(param_dimens), dimension_name_list=tuple(param_dimens))
+        if error:
+            print("Failed to add parameter " + param_name + " due to " + error)
+        tab_file = param_name + ".tab"
+
+        if os.path.isfile(tab_files_path + tab_file):
+            with open(tab_files_path + tab_file) as csv_file:
+                csv_reader = csv.reader(csv_file, dialect='excel-tab')
+                first_line = True
+                key = param_name
+                for row in csv_reader:
+                    if not first_line:
+                        entity_byname = tuple(row[:len(param_dimens)])
+                        added, error = target_db.add_entity_item(entity_class_name='__'.join(param_dimens),entity_byname=entity_byname)
+                    else:
+                        header = row
+                    first_line = False
+    return target_db
+
+def add_general_params(target_db):
+
+    params_dict = dict()
+    params_dict["CCSCostTSVariable"] = ["Generator"]
+    params_dict["CO2Cap"] = ["General"]
+    params_dict["CO2Price"] = ["General"]
+    params_dict["AvailableBioEnergy"] = ["General"]
+    params_dict["OffshoreConverterCapitalCost"] = ["Transmission"]
+    params_dict["OffshoreConverterOMCost"] = ["Transmission"]
+    params_dict["PipelineElectricityUse"] =  ["NaturalGas"]
+    params_dict["ElectrolyzerFixedOMCost"] = ["Hydrogen"]
+    params_dict["ElectrolyzerLifetime"] = ["Hydrogen"]
+    params_dict["ElectrolyzerPlantCapitalCost"] = ["Hydrogen"]
+    params_dict["ElectrolyzerPowerUse"] = ["Hydrogen"]
+    params_dict["ElectrolyzerStackCapitalCost"] = ["Hydrogen"]
+    params_dict["PipelineCapitalCost"] = ["Hydrogen"]
+    params_dict["PipelineCompressorPowerUsage"] = ["Hydrogen"]
+    params_dict["PipelineOMCostPerKM"] = ["Hydrogen"]
+    params_dict["StorageCapitalCost"] = ["Hydrogen"]
+    params_dict["StorageFixedOMCost"] = ["Hydrogen"]
+    params_dict["Refinery_HeatConsumption"] = ["Industry"]
+    params_dict["Refinery_HydrogenConsumption"] = ["Industry"]
+
+    for param_name, param_dimens in params_dict.items():
+        added, updated, error = target_db.add_update_parameter_definition_item(entity_class_name="General", name=param_name)
+        if error:
+            print("Failed to add parameter " + param_name + " due to " + error)
+        tab_file = param_dimens[0] + "_" + param_name + ".tab"
+
+        data = defaultdict(list)
+        index = defaultdict(list)
+        entity_byname = ('General',)
+        if os.path.isfile(tab_files_path + tab_file):
+            with open(tab_files_path + tab_file) as csv_file:
+                csv_reader = csv.reader(csv_file, dialect='excel-tab')
+                first_line = True
+                key = param_name
+                for row in csv_reader:
+                    if not first_line:
+                        if value_dimens == 2:
+                            index[key].append(row[-2])
+                            data[key].append(row[-1])
+                        else:
+                            data[key] = row[-1]
+                    else:
+                        header = row
+                        value_dimens = len(row)
+                    first_line = False
+            target_db = add_parameters(target_db, data, index, header, "General", param_name, entity_byname = entity_byname)
+    try:
+        target_db.commit_session("Added parameter " + param_name)
+    except NothingToCommit:
+        pass
+    except DBAPIError as e:
+        print("failed to commit entities and entity_alternatives")
+    return target_db
+
+def add_CO2_params(target_db):
+
+    params_dict = dict()
+    params_dict["PipelineFixedOM"] = ["CO2"]
+    params_dict["PipelineElectricityUsage"] = ["CO2"]
+    params_dict["PipelineCapitalCost"] = ["CO2"]
+
+    for param_name, param_dimens in params_dict.items():
+
+        entity_class_name = param_dimens[0]
+        added, updated, error = target_db.add_update_parameter_definition_item(entity_class_name= entity_class_name, name=param_name)
+        if error:
+            print("Failed to add parameter " + param_name + " due to " + error)
+        tab_file = param_dimens[0] + "_"+ param_name + ".tab"
+        data = defaultdict(list)
+        index = defaultdict(list)
+        if os.path.isfile(tab_files_path + tab_file):
+            with open(tab_files_path + tab_file) as csv_file:
+                csv_reader = csv.reader(csv_file, dialect='excel-tab')
+                first_line = True
+                key = param_name
+                for row in csv_reader:
+                    if not first_line:
+                        if value_dimens == 2:
+                            index[key].append(row[-2])
+                            data[key].append(row[-1])
+                        else:
+                            data[key] = row[-1]
+                    else:
+                        header = row
+                        value_dimens = len(row)
+                    first_line = False
+            target_db = add_parameters(target_db, data, index, header, "CO2", param_name, entity_byname = ("CO2",))
+    try:
+        target_db.commit_session("Added parameter " + param_name)
+    except NothingToCommit:
+        pass
+    except DBAPIError as e:
+        print("failed to commit entities and entity_alternatives")
+    
+    return target_db
 
 def add_params(target_db, param_listing):
     for type_name, type_params in param_listing.items():
         for param_name, param_dimens in type_params.items():
             added, updated, error = target_db.add_update_parameter_definition_item(
-                entity_class_name='__'.join(param_dimens[0]),
+                entity_class_name='__'.join(param_dimens),
                 name=param_name)
             if error:
-                print("Failed to add parameter definition " + param_name + " due to " + error)
-            nr_dimensions = len(param_dimens[0])
-            entity_bynames = []
-            data = []
-            header = []
+                print("Failed to add parameter " + param_name + " due to " + error)
+            nr_dimensions = len(param_dimens)
+            data = defaultdict(list)
+            index = defaultdict(list)
             tab_file = type_name + "_" + param_name + ".tab"
-            with open(tab_files_path + tab_file) as csv_file:
-                csv_reader = csv.reader(csv_file, dialect='excel-tab')
-                first_line = True
-                for (i, row) in enumerate(csv_reader):
-                    if not first_line:
-                        entity_byname = '__'.join(row[:nr_dimensions])
-                        entity_bynames.append(entity_byname)
-                        if len(param_dimens) == 2:
-                            header[i].append(row[-2])
-                            data[i].append(row[-1])
-                        elif len(param_dimens) == 3:
-                            header[i].append(row[-3])
-                            header[i].append(row[-2])
-                            data[i].append(row[-1])
+            if os.path.isfile(tab_files_path + tab_file):
+                with open(tab_files_path + tab_file) as csv_file:
+                    csv_reader = csv.reader(csv_file, dialect='excel-tab')
+                    first_line = True
+                    for row in csv_reader:
+                        if not first_line:
+                            entity_byname = '__'.join(row[:nr_dimensions])
+                            if value_dimens > 2:
+                                index[entity_byname].append(row[len(param_dimens):-1])
+                                data[entity_byname].append(row[-1])
+                            elif value_dimens == 2:
+                                index[entity_byname].append(row[-2])
+                                data[entity_byname].append(row[-1])
+                            else:
+                                data[entity_byname] = row[-1]
                         else:
-                            data[i].append(row[-1])
-                    first_line = False
-            add_entity_flag = False
-            if param_dimens[0][0] == "Horizon":
-                add_entity_flag = True
-            for (i, entity_byname) in entity_bynames():
-                if add_entity_flag:
-                    added, updated, error = target_db.add_update_entity_item(entity_class_name='__'.join(param_dimens[0]),
-                                                                    entity_byname=tuple(entity_byname.split('__')))
-                    if error:
-                        print("Could not add an entity: " + error)
-                if header[i]:
-                    headers = header[i]
-                    data_map = api.Map(indexes=headers,
-                                       values=data[i],
-                                       index_name="horizon")
-                    p_value, p_type = api.to_database(data_map)
-                else:
-                    p_value, p_type = api.to_database(float(data[i]))
-                added, error = target_db.add_parameter_value_item(entity_class_name='__'.join(param_dimens[0]),
-                                                                  entity_byname=tuple(entity_byname.split('__')),
-                                                                  parameter_definition_name=param_name,
-                                                                  alternative_name=alternative_name,
-                                                                  type=p_type,
-                                                                  value=p_value)
-                if error:
-                    print("Could not add a parameter: " + error)
+                            header = row
+                            value_dimens = len(row)-len(param_dimens)
+                        first_line = False
+
+                target_db = add_parameters(target_db, data, index, header[len(param_dimens):], '__'.join(param_dimens), param_name)
             print("Added parameter " + param_name)
+                        #target_db = process_capacities(source_db, target_db)
             try:
                 target_db.commit_session("Added parameter " + param_name)
             except NothingToCommit:
-                print(f"No parameter for {param_name} to be committed")
+                pass
             except DBAPIError as e:
-                print(e)
+                print("failed to commit entities and entity_alternatives")
+
     return target_db
 
 
@@ -222,6 +422,10 @@ with DatabaseMapping(url_db) as target_db:
 
     target_db = add_seasons(target_db)
     target_db = add_sets(target_db, set_list)
+    target_db = add_sets_directly(target_db)
+    target_db = add_relationships_from_capacity(target_db)
     target_db = add_node_technology(target_db)
     target_db = add_params(target_db, param_listing)
+    target_db = add_general_params(target_db)
+    target_db = add_CO2_params(target_db)
     #target_db = add_sampling_key(target_db)
