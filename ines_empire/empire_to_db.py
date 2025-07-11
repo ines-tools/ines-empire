@@ -1,13 +1,13 @@
 import spinedb_api as api
 from spinedb_api import DatabaseMapping
+from sqlalchemy.exc import DBAPIError
+from spinedb_api.exception import NothingToCommit
 import sys
 import os
 import pyarrow
 import numpy
 import spinetoolbox as toolbox
 import yaml
-# import cProfile
-import copy
 import csv
 import pandas as pd
 from collections import defaultdict
@@ -417,6 +417,7 @@ with DatabaseMapping(url_db) as target_db:
     target_db.add_alternative_item(name=alternative_name)
     target_db.add_scenario_item(name=alternative_name)
     target_db.add_scenario_alternative_item(alternative_name=alternative_name, scenario_name=alternative_name, rank=0)
+    target_db.add_entity_class_item(name="Horizon")
     target_db.commit_session("Added alternative and scenario " + alternative_name)
 
     target_db = add_seasons(target_db)

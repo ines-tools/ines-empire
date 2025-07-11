@@ -13,7 +13,7 @@ Node__Generator:
     RefInitialCap:
       target: [units_existing, 1, [[1, 2]]]
       operation: divide
-      with: 1000
+      with: [Node, HydroGenMaxAnnualProduction]
   unit__to_node:
     RefInitialCap:
       target: [capacity, 1, [[1, 2], [1]]]
