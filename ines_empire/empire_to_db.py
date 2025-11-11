@@ -4,12 +4,10 @@ from sqlalchemy.exc import DBAPIError
 from spinedb_api.exception import NothingToCommit
 import sys
 import os
-import pyarrow
-import numpy
-import spinetoolbox as toolbox
 import yaml
 import csv
 import pandas as pd
+from pathlib import Path
 from collections import defaultdict
 from sqlalchemy.exc import DBAPIError
 from spinedb_api.exception import NothingToCommit
@@ -35,7 +33,7 @@ def recursively_return_map_old(dict_in, header, level):
     out_map = api.Map(indexes=indexes, values=values, index_name=header[level])
     return out_map
 
-def add_parameters(target_db, data, index, header, entity_class_name, param_name, entity_byname = None):
+def add_single_parameter(target_db, data, index, header, entity_class_name, param_name, entity_byname = None):
     for key, values in data.items():
         if not entity_byname:
             entity_byname_out = tuple(key.split('__'))
@@ -81,7 +79,7 @@ def add_parameters(target_db, data, index, header, entity_class_name, param_name
     return target_db
 
 def add_sampling_key(target_db):
-    data = pd.read_csv(tab_files_path + "sampling_key.csv", index_col=[0, 1, 2, 3], skipinitialspace=True)
+    data = pd.read_csv(Path(tab_files_path,"sampling_key.csv"), index_col=[0, 1, 2, 3], skipinitialspace=True)
     year_index = data.index.get_level_values(3)
     data = data.droplevel(3)
 
@@ -95,7 +93,7 @@ def add_sampling_key(target_db):
     foo = fulldf.to_numpy().reshape(shape)
 
 def add_node_technology(target_db):
-    with open(tab_files_path + "Sets_Node.tab") as csv_file:
+    with open(Path(tab_files_path,"Sets_Node.tab"), encoding="utf-8") as csv_file:
         csv_reader = csv.reader(csv_file, dialect='excel-tab')
         first_line = True
         nodes = []
@@ -103,7 +101,7 @@ def add_node_technology(target_db):
             if not first_line:
                 nodes.append(row[0])
             first_line = False
-    with open(tab_files_path + "Sets_Technology.tab") as csv_file:
+    with open(Path(tab_files_path,"Sets_Technology.tab"), encoding="utf-8") as csv_file:
         csv_reader = csv.reader(csv_file, dialect='excel-tab')
         first_line = True
         technologies = []
@@ -164,8 +162,9 @@ def add_sets_directly(target_db):
                     header = row
                 first_line = False
     """
-    if os.path.isfile(tab_files_path + "Hydrogen_StorageMaxCapacity.tab"):
-        with open(tab_files_path + "Hydrogen_StorageMaxCapacity.tab") as csv_file:
+    tab_file_path = Path(tab_files_path,"Hydrogen_StorageMaxCapacity.tab")
+    if os.path.isfile(tab_file_path):
+        with open(tab_file_path, encoding="utf-8") as csv_file:
             csv_reader = csv.reader(csv_file, dialect='excel-tab')
             first_line = True
             for row in csv_reader:
@@ -184,8 +183,9 @@ def add_sets(target_db, set_list):
     for set_header, set_names in set_list.items():
         for set_name, set_dimens in set_names.items():
             tab_file = set_header + "_" + set_name + ".tab"
-            if os.path.isfile(tab_files_path + tab_file):
-                with open(tab_files_path + tab_file) as csv_file:
+            tab_file_path = Path(tab_files_path,tab_file)
+            if os.path.isfile(tab_file_path):
+                with open(tab_file_path, encoding="utf-8") as csv_file:
                     csv_reader = csv.reader(csv_file, dialect='excel-tab')
                     first_line = True
                     if len(set_dimens) == 1:
@@ -201,7 +201,7 @@ def add_sets(target_db, set_list):
                     for row in csv_reader:
                         if not first_line:
                             entity_byname = tuple(row)
-                            if len(set_dimens) == 1 and set_name is not set_dimens[0]:
+                            if len(set_dimens) == 1 and not set_name == set_dimens[0]:
                                 added, error = target_db.add_entity_item(entity_class_name=set_name,
                                                                         entity_byname=entity_byname)
                             else:
@@ -209,7 +209,7 @@ def add_sets(target_db, set_list):
                                                                         entity_byname=entity_byname)
                             if error:
                                 print("error adding entity (set members): " + error)
-                            if len(entity_byname) == 1 and set_name is set_dimens[0]:
+                            if len(entity_byname) == 1 and set_name == set_dimens[0]:
                                 added, error = target_db.add_entity_alternative_item(entity_class_name='__'.join(set_dimens),
                                                                                     entity_byname=entity_byname,
                                                                                     alternative_name=alternative_name)
@@ -232,8 +232,9 @@ def add_relationships_from_capacity(target_db):
             print("Failed to add parameter " + param_name + " due to " + error)
         tab_file = param_name + ".tab"
 
-        if os.path.isfile(tab_files_path + tab_file):
-            with open(tab_files_path + tab_file) as csv_file:
+        tab_file_path = Path(tab_files_path,tab_file)
+        if os.path.isfile(tab_file_path):
+            with open(tab_file_path, encoding="utf-8") as csv_file:
                 csv_reader = csv.reader(csv_file, dialect='excel-tab')
                 first_line = True
                 key = param_name
@@ -278,8 +279,9 @@ def add_general_params(target_db):
         data = defaultdict(list)
         index = defaultdict(list)
         entity_byname = ('General',)
-        if os.path.isfile(tab_files_path + tab_file):
-            with open(tab_files_path + tab_file) as csv_file:
+        tab_file_path = Path(tab_files_path,tab_file)
+        if os.path.isfile(tab_file_path):
+            with open(tab_file_path, encoding="utf-8") as csv_file:
                 csv_reader = csv.reader(csv_file, dialect='excel-tab')
                 first_line = True
                 key = param_name
@@ -294,7 +296,7 @@ def add_general_params(target_db):
                         header = row
                         value_dimens = len(row)
                     first_line = False
-            target_db = add_parameters(target_db, data, index, header, "General", param_name, entity_byname = entity_byname)
+            target_db = add_single_parameter(target_db, data, index, header, "General", param_name, entity_byname = entity_byname)
     try:
         target_db.commit_session("Added parameter " + param_name)
     except NothingToCommit:
@@ -319,8 +321,9 @@ def add_CO2_params(target_db):
         tab_file = param_dimens[0] + "_"+ param_name + ".tab"
         data = defaultdict(list)
         index = defaultdict(list)
-        if os.path.isfile(tab_files_path + tab_file):
-            with open(tab_files_path + tab_file) as csv_file:
+        tab_file_path = Path(tab_files_path,tab_file)
+        if os.path.isfile(tab_file_path):
+            with open(tab_file_path, encoding="utf-8") as csv_file:
                 csv_reader = csv.reader(csv_file, dialect='excel-tab')
                 first_line = True
                 key = param_name
@@ -335,7 +338,7 @@ def add_CO2_params(target_db):
                         header = row
                         value_dimens = len(row)
                     first_line = False
-            target_db = add_parameters(target_db, data, index, header, "CO2", param_name, entity_byname = ("CO2",))
+            target_db = add_single_parameter(target_db, data, index, header, "CO2", param_name, entity_byname = ("CO2",))
     try:
         target_db.commit_session("Added parameter " + param_name)
     except NothingToCommit:
@@ -357,8 +360,9 @@ def add_params(target_db, param_listing):
             data = defaultdict(list)
             index = defaultdict(list)
             tab_file = type_name + "_" + param_name + ".tab"
-            if os.path.isfile(tab_files_path + tab_file):
-                with open(tab_files_path + tab_file) as csv_file:
+            tab_file_path = Path(tab_files_path,tab_file)
+            if os.path.isfile(tab_file_path):
+                with open(tab_file_path, encoding="utf-8") as csv_file:
                     csv_reader = csv.reader(csv_file, dialect='excel-tab')
                     first_line = True
                     for row in csv_reader:
@@ -377,7 +381,7 @@ def add_params(target_db, param_listing):
                             value_dimens = len(row)-len(param_dimens)
                         first_line = False
 
-                target_db = add_parameters(target_db, data, index, header[len(param_dimens):], '__'.join(param_dimens), param_name)
+                target_db = add_single_parameter(target_db, data, index, header[len(param_dimens):], '__'.join(param_dimens), param_name)
             print("Added parameter " + param_name)
                         #target_db = process_capacities(source_db, target_db)
             try:

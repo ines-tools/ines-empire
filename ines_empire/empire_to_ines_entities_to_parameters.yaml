@@ -2,10 +2,18 @@
 #   target_entity_class:
 #     target_parameter: ["entity_name", target_parameter_type]
 #                       ["new_value", target_parameter_value]
-REGION__FUEL: 
-  node: 
-    node_type: ["new_value", "balance", [[1, 2]]]
-    flow_scaling_method: ["new_value", "scale_to_annual", [[1, 2]]]
-REGION__STORAGE: 
-  node: 
-    node_type: ["new_value", "storage", [[1, 2]]]
+
+# RampingGenerator is this necessary? RampRate is a separate parameter
+# OnshoreNode?
+# HydrogenStorageNode, do manually
+# Hydrogenerator ? Node: HydroGenMaxAnnualProduction + HydroGenerator + HydroGeneratorWithReservoir, do manually
+# DependentStorage: Power and Energy are tied when investing, do manually
+# CO2 SequestrationNodes?
+
+# Consider adding the industry network
+
+RampingGenerators:
+  unit__to_node:
+    ramp_method: 
+      target: ["new_value", "ramp_limit", [[1]]]
+      for_each: [Node, [[1], [1]]]
