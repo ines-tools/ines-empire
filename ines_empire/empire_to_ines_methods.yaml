@@ -42,3 +42,11 @@ Generator:
       operation: constant
       with: 'ramp_limit'
       suppress_warnings: True
+Storage:
+  node:
+    StorageInitialEnergyLevel:
+      target: [storage_state_fix_method, 1, [[1]]]
+      for_each: [Node, [[1]]]
+      operation: constant
+      with: 'fix_start'
+      suppress_warnings: True

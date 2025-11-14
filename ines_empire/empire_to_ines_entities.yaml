@@ -7,19 +7,15 @@ Node: node
 Horizon: period
 #Storage: node
 CO2: node
-Generator:
-  - node: [[1], CO2Content]
+#Generator:
+#  - node: [[1], CO2Content]
 Node__Generator:
   - unit: [[1, 2]]
   - unit__to_node: [[1, 2], [1]]
 Node__Node:
   - link: [[1, 2], Length]
   - node__link__node: [[1], [1, 2], [2], Length]
-Node__Storage:
-  - unit: [[1, 2]]
-  - unit__to_node: [[1, 2], [1]]
-  - node__to_unit: [[1], [1, 2]]
-  - node: [[1, 2]]
+
 
 #NaturalGasTerminals: unit
 #NaturalGasNodes: node, Create separately
