@@ -1,0 +1,48 @@
+# source_entity_class:
+#   target_entity_class:
+#     source_parameter:
+#       target_parameter OR 
+#       [target_parameter, optional multiplier, [optional list of dimension positions]]
+
+AmmoniaProducers:
+  AmmoniaProductionPlants:
+    Ammonia:
+      #Ammonia_ElConsumption leave for manual
+      #Ammonia_FeedstockConsumption leave for manual
+      Ammonia_FixedOM: [[[2],[2,1]], fixed_cost, 1]
+      Ammonia_InvCost: [[[2],[2,1]], investment_cost, 1]
+      Ammonia_YearlyProduction: [[[1],[1]], flow_annual, -1]
+      #Ammonia_InitialCapacity:
+      #  positions: [[1,2],[2]]
+      #  target: [units_existing, 1]
+      #  operation: multiply
+      #  with: [AmmoniaProductionPlants, Ammonia_ScaleFactorInitialCap]
+      # won't work because of the Ammonia_ScaleFactorInitialCap is map and Ammonia_InitialCapacity is relationship parameter
+CementProducers:
+  CementProductionPlants:
+    Cement:
+      #Ammonia_ElConsumption leave for manual
+      #Ammonia_FeedstockConsumption leave for manual
+      Cement_FixedOM: [[[2],[2,1]], fixed_cost, 1]
+      Cement_InvCost: [[[2],[2,1]], investment_cost, 1]
+      Cement_YearlyProduction: [[[1],[1]], flow_annual, -1]
+SteelProducers:
+  SteelProductionPlants:
+    Steel:
+      Steel_FixedOM: [[[2],[2,1]], fixed_cost, 1]
+      Steel_InvCost: [[[2],[2,1]], investment_cost, 1]
+      Steel_YearlyProduction: [[[1],[1]], flow_annual, -1]
+      Steel_VarOpex: [[[2],[2,1]], other_operational_cost, 1]
+ReformerLocations:
+  ReformerPlants:
+    H2:
+      ReformerCapitalCost: [[[2],[2,1]], investment_cost, 1]
+      ReformerEfficiency: [[[2],[2]], efficiency, 1]
+      ReformerFixedOMCost: [[[2],[2,1]], fixed_cost, 1]
+      ReformerLifetime: [[[2],[2]], lifetime, 1]
+      ReformerVariableOMCost: [[[2],[2,1]], other_operational_cost, 1]
+
+
+
+
+

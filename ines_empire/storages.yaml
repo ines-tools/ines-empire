@@ -1,0 +1,14 @@
+Storage:  #The position numbers mean the following 0:Node, 1: unit_in, 2: unit_out, 3: storage. [1,3] means the unit__to_node from unit_in to storage ect.
+  EnergyCapitalCost: [[3], "storage_investment_cost", 1]
+  EnergyFixedOMCost: [[3], "storage_fixed_cost", 1]
+  Lifetime: [[3], "storage_lifetime", 1]
+  PowerCapitalCost: [[1,3], "investment_cost", 1]
+  PowerFixedOMCost: [[1,3], "fixed_cost", 1]
+  StorageBleedEfficiency: [[3], "storage_loss_from_stored_energy", 1]
+  StorageChargeEff: [[1], "efficiency", 1]
+  StorageDischargeEff: [[2], "efficiency", 1]
+  StorageInitialEnergyLevel: [[3], "storage_state_fix", 1]
+
+
+
+

@@ -9,26 +9,83 @@ Node:
     ElectricAnnualDemand: [flow_annual, -1, [[1]]]
     NodeLostLoadCost: [penalty_upward, 1, [[1]]]
 Node__Generator:
-  unit:
-    RefInitialCap:
-      target: [units_existing, 1, [[1, 2]]]
-      operation: divide
-      with: [Node, HydroGenMaxAnnualProduction]
+#  unit:
+#    RefInitialCap:
+#      target: [units_existing, 1, [[1, 2]]]
+#      operation: constant
+#      with: 1
+      #operation: divide
+      #with: [Node, HydroGenMaxAnnualProduction]
   unit__to_node:
     RefInitialCap:
       target: [capacity, 1, [[1, 2], [1]]]
-      operation: constant
-      with: 1000
+    InitialCapacity:
+      target: [capacity, 1, [[1, 2], [1]]]
 Generator:
   node:
     CO2Content: 
       target: [co2_content, 3.6, [[1]]]
+    FuelCosts:
+      target: [commodity_price, 3.6, [[1]]]
   unit__to_node:
     CapitalCosts:
       target: [investment_cost, 1, [[1]]]
       for_each: [Node, [[1], [1]]]  # Taking first dimension of Node, insert it into first position of
-                                    # entity_byname_tuple as the first name part (push original to second).
-                                    # Then also insert it as a second dimension (just Node name).
+      suppress_warnings: True       # entity_byname_tuple as the first name part (push original to second).# Then also insert it as a second dimension (just Node name).
+    RampRate:
+      target: [[ramp_limit_down,ramp_limit_up], 1, [[1]]]
+      for_each: [Node, [[1], [1]]]
+      suppress_warnings: True
+    VariableOMCosts:
+      target: [other_operational_cost, 1, [[1]]]
+      for_each: [Node, [[1], [1]]]
+      suppress_warnings: True
+  #unit:  
+  #  Efficiency:
+  #    target: [efficiency, 1, [[1]]]
+  #    for_each: [Node, [[1], [1]]]
+  #  GeneratorTypeAvailability:
+  #    target: [availability, 1, [[1]]]
+  #    for_each: [Node, [[1], [1]]]
+  #  Lifetime:
+  #    target: [lifetime, 1, [[1]]]
+  #    for_each: [Node, [[1], [1]]]
+Node__Node:
+  link:
+    #InitialCapacity:
+    #  target: [capacity, 1, [[1,2]]]
+    #  if_exists: Length
+    Lifetime:
+      target: [lifetime, 1, [[1,2]]]
+      if_exists: Length
+    lineEfficiency:
+      target: [efficiency, 1, [[1,2]]]
+      if_exists: Length
+    #MaxBuiltCapacity:
+    #  target: [links_invest_max_period, 1, [[1,2]]]
+    #  if_exists: Length
+    #MaxInstallCapacityRaw:
+    #  target: [links_max_cumulative, 1, [[1,2]]]
+    #  if_exists: Length
+#Node__Storage:
+#  node:
+#    EnergyInitialCapacity:
+#      target: [storages_existing, 1, [[1, 2]]]
+#      operation: constant
+#      with: 1
+
+
+  
     
+    
+
+  
+
 #Node__Technology:
 #  set:
+
+#Generator:
+  #FuelCosts:
+
+#Node__Generator
+   #ScaleFactorInitialCap:

@@ -1,0 +1,5 @@
+#### Mandatory data
+default_lifetime: 50
+default_interest_rate: 0.05
+default_alternative: "base"
+default_capacity: 100 # set for units when capacity is zero, units_existing will be set to 0 in that case

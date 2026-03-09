@@ -3,55 +3,7 @@
 #     source_feature:
 #       source_method:
 #         target_feature: target_method  (optionally target_method --> [target_method, list of dimension positions]
-node: 
-  node: 
-    node_type:
-      balance: 
-        has_balance: 'yes'
-      storage:
-        has_balance: 'yes'
-        has_storage: 'yes'
-    flow_scaling_method:
-      no_inflow:
-        inflow_method: 'no_inflow'
-      use_profile_directly:
-        inflow_method: 'use_original'
-      scale_to_annual:
-        inflow_method: 'scale_to_annual_flow'
-unit:
-  unit:
-    conversion_method: 
-      constant_efficiency:
-        conversion_method: constant_efficiency
-      partial_load_efficiency:
-        conversion_method: min_load_efficiency
-      coefficients_only:
-        conversion_method: none
-    startup_method: 
-      no_startup:
-        startup_method: no_startup
-      linear:
-        startup_method: linear
-      integer:
-        startup_method: binary
-    investment_method: 
-      not_allowed: 
-        invest_method: 'not_allowed'
-      limit_total_capacity: 
-        invest_method: 'invest_total'
-      no_limits: 
-        invest_method: 'invest_no_limit'
-link: 
-  connection: 
-    transfer_method: 
-      no_losses_no_cost: 
-        transfer_method: 'no_losses_no_variable_cost'
-      regular_linear: 
-        transfer_method: 'regular'
-      exact_integer: 
-        transfer_method: 'exact'
-      only_cost: 
-        transfer_method: 'variable_cost_only'
+
 unit__to_node: 
   unit__outputNode: 
     ramp_method: 
@@ -73,17 +25,8 @@ unit__to_node:
         profile_method: [fixed, [1, 2, 1]]
       no_profile: 
         profile_method: [no_profile, [1, 2, 1]]
-constraint: 
-  constraint:
-    sense:
-      greater_than: 
-        sense: greater_than
-      less_than: 
-        sense: less_than
-      equal: 
-        sense: equal
-node__to_unit: 
-  unit__outputNode: 
+Generator:
+  unit__to_node:
     ramp_method: 
       no_constraint: 
         ramp_method: 'none'
@@ -93,13 +36,17 @@ node__to_unit:
         ramp_method: 'ramp_cost'
       ramp_limit_and_cost: 
         ramp_method: 'both'
-  unit__node__profile:
-    profile_method:
-      upper_limit: 
-        profile_method: [upper_limit, [1, 2, 1]]
-      lower_limit: 
-        profile_method: [lower_limit, [1, 2, 1]]
-      fixed:
-        profile_method: [fixed, [1, 2, 1]]
-      no_profile: 
-        profile_method: [no_profile, [1, 2, 1]]
+    RampRate:
+      target: [ramp_method, 1, [[1]]]
+      for_each: [Node, [[1], [1]]]
+      operation: constant
+      with: 'ramp_limit'
+      suppress_warnings: True
+Storage:
+  node:
+    StorageInitialEnergyLevel:
+      target: [storage_state_fix_method, 1, [[1]]]
+      for_each: [Node, [[1]]]
+      operation: constant
+      with: 'fix_start'
+      suppress_warnings: True
