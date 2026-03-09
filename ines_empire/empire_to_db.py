@@ -4,12 +4,11 @@ from sqlalchemy.exc import DBAPIError
 from spinedb_api.exception import NothingToCommit
 import sys
 import os
+from pathlib import Path
 import yaml
 import csv
 import pandas as pd
-from pathlib import Path
 from collections import defaultdict
-from sqlalchemy.exc import DBAPIError
 from spinedb_api.exception import NothingToCommit
 
 
@@ -79,7 +78,7 @@ def add_single_parameter(target_db, data, index, header, entity_class_name, para
     return target_db
 
 def add_sampling_key(target_db):
-    data = pd.read_csv(Path(tab_files_path,"sampling_key.csv"), index_col=[0, 1, 2, 3], skipinitialspace=True)
+    data = pd.read_csv(Path(tab_files_path + "sampling_key.csv"), index_col=[0, 1, 2, 3], skipinitialspace=True)
     year_index = data.index.get_level_values(3)
     data = data.droplevel(3)
 
@@ -93,7 +92,7 @@ def add_sampling_key(target_db):
     foo = fulldf.to_numpy().reshape(shape)
 
 def add_node_technology(target_db):
-    with open(Path(tab_files_path,"Sets_Node.tab"), encoding="utf-8") as csv_file:
+    with open(Path(tab_files_path + "Sets_Node.tab")) as csv_file:
         csv_reader = csv.reader(csv_file, dialect='excel-tab')
         first_line = True
         nodes = []
@@ -101,7 +100,7 @@ def add_node_technology(target_db):
             if not first_line:
                 nodes.append(row[0])
             first_line = False
-    with open(Path(tab_files_path,"Sets_Technology.tab"), encoding="utf-8") as csv_file:
+    with open(Path(tab_files_path + "Sets_Technology.tab")) as csv_file:
         csv_reader = csv.reader(csv_file, dialect='excel-tab')
         first_line = True
         technologies = []
@@ -162,9 +161,8 @@ def add_sets_directly(target_db):
                     header = row
                 first_line = False
     """
-    tab_file_path = Path(tab_files_path,"Hydrogen_StorageMaxCapacity.tab")
-    if os.path.isfile(tab_file_path):
-        with open(tab_file_path, encoding="utf-8") as csv_file:
+    if os.path.isfile(Path(tab_files_path + "Hydrogen_StorageMaxCapacity.tab")):
+        with open(Path(tab_files_path + "Hydrogen_StorageMaxCapacity.tab")) as csv_file:
             csv_reader = csv.reader(csv_file, dialect='excel-tab')
             first_line = True
             for row in csv_reader:
@@ -183,9 +181,8 @@ def add_sets(target_db, set_list):
     for set_header, set_names in set_list.items():
         for set_name, set_dimens in set_names.items():
             tab_file = set_header + "_" + set_name + ".tab"
-            tab_file_path = Path(tab_files_path,tab_file)
-            if os.path.isfile(tab_file_path):
-                with open(tab_file_path, encoding="utf-8") as csv_file:
+            if os.path.isfile(Path(tab_files_path + tab_file)):
+                with open(Path(tab_files_path + tab_file)) as csv_file:
                     csv_reader = csv.reader(csv_file, dialect='excel-tab')
                     first_line = True
                     if len(set_dimens) == 1:
@@ -232,9 +229,8 @@ def add_relationships_from_capacity(target_db):
             print("Failed to add parameter " + param_name + " due to " + error)
         tab_file = param_name + ".tab"
 
-        tab_file_path = Path(tab_files_path,tab_file)
-        if os.path.isfile(tab_file_path):
-            with open(tab_file_path, encoding="utf-8") as csv_file:
+        if os.path.isfile(Path(tab_files_path + tab_file)):
+            with open(Path(tab_files_path + tab_file)) as csv_file:
                 csv_reader = csv.reader(csv_file, dialect='excel-tab')
                 first_line = True
                 key = param_name
@@ -279,9 +275,8 @@ def add_general_params(target_db):
         data = defaultdict(list)
         index = defaultdict(list)
         entity_byname = ('General',)
-        tab_file_path = Path(tab_files_path,tab_file)
-        if os.path.isfile(tab_file_path):
-            with open(tab_file_path, encoding="utf-8") as csv_file:
+        if os.path.isfile(Path(tab_files_path + tab_file)):
+            with open(Path(tab_files_path + tab_file)) as csv_file:
                 csv_reader = csv.reader(csv_file, dialect='excel-tab')
                 first_line = True
                 key = param_name
@@ -321,9 +316,8 @@ def add_CO2_params(target_db):
         tab_file = param_dimens[0] + "_"+ param_name + ".tab"
         data = defaultdict(list)
         index = defaultdict(list)
-        tab_file_path = Path(tab_files_path,tab_file)
-        if os.path.isfile(tab_file_path):
-            with open(tab_file_path, encoding="utf-8") as csv_file:
+        if os.path.isfile(Path(tab_files_path + tab_file)):
+            with open(Path(tab_files_path + tab_file)) as csv_file:
                 csv_reader = csv.reader(csv_file, dialect='excel-tab')
                 first_line = True
                 key = param_name
@@ -360,9 +354,8 @@ def add_params(target_db, param_listing):
             data = defaultdict(list)
             index = defaultdict(list)
             tab_file = type_name + "_" + param_name + ".tab"
-            tab_file_path = Path(tab_files_path,tab_file)
-            if os.path.isfile(tab_file_path):
-                with open(tab_file_path, encoding="utf-8") as csv_file:
+            if os.path.isfile(Path(tab_files_path + tab_file)):
+                with open(Path(tab_files_path + tab_file)) as csv_file:
                     csv_reader = csv.reader(csv_file, dialect='excel-tab')
                     first_line = True
                     for row in csv_reader:
@@ -393,43 +386,43 @@ def add_params(target_db, param_listing):
 
     return target_db
 
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        url_db = sys.argv[1]
+    else:
+        sys.exit("Please give target database url as the first argument and the path to input file folder as second argument")
+    if len(sys.argv) > 2:
+        tab_files_path = sys.argv[2]
+    else:
+        sys.exit("Please give target database url as the first argument and the path to input file folder as second argument")
+    if len(sys.argv) > 3:
+        alternative_name = sys.argv[3]
+    else:
+        alternative_name = "base"
 
-if len(sys.argv) > 1:
-    url_db = sys.argv[1]
-else:
-    exit("Please give target database url as the first argument and the path to input file folder as second argument")
-if len(sys.argv) > 2:
-    tab_files_path = sys.argv[2]
-else:
-    exit("Please give target database url as the first argument and the path to input file folder as second argument")
-if len(sys.argv) > 3:
-    alternative_name = sys.argv[3]
-else:
-    alternative_name = "base"
+    with open('param_dimens.yaml', 'r') as yaml_file:
+        param_listing = yaml.safe_load(yaml_file)
+    with open('sets.yaml', 'r') as yaml_file:
+        set_list = yaml.safe_load(yaml_file)
 
-with open('param_dimens.yaml', 'r') as yaml_file:
-    param_listing = yaml.safe_load(yaml_file)
-with open('sets.yaml', 'r') as yaml_file:
-    set_list = yaml.safe_load(yaml_file)
+    with DatabaseMapping(url_db) as target_db:
+        target_db.purge_items('entity')
+        target_db.purge_items('alternative')
+        target_db.purge_items('scenario')
+        target_db.purge_items('entity_class')
+        target_db.commit_session("Purged alternatives")
+        target_db.add_alternative_item(name=alternative_name)
+        target_db.add_scenario_item(name=alternative_name)
+        target_db.add_scenario_alternative_item(alternative_name=alternative_name, scenario_name=alternative_name, rank=0)
+        target_db.add_entity_class_item(name="Horizon")
+        target_db.commit_session("Added alternative and scenario " + alternative_name)
 
-with DatabaseMapping(url_db) as target_db:
-    target_db.purge_items('entity')
-    target_db.purge_items('alternative')
-    target_db.purge_items('scenario')
-    target_db.purge_items('entity_class')
-    target_db.commit_session("Purged alternatives")
-    target_db.add_alternative_item(name=alternative_name)
-    target_db.add_scenario_item(name=alternative_name)
-    target_db.add_scenario_alternative_item(alternative_name=alternative_name, scenario_name=alternative_name, rank=0)
-    target_db.add_entity_class_item(name="Horizon")
-    target_db.commit_session("Added alternative and scenario " + alternative_name)
-
-    target_db = add_seasons(target_db)
-    target_db = add_sets(target_db, set_list)
-    target_db = add_sets_directly(target_db)
-    target_db = add_relationships_from_capacity(target_db)
-    target_db = add_node_technology(target_db)
-    target_db = add_params(target_db, param_listing)
-    target_db = add_general_params(target_db)
-    target_db = add_CO2_params(target_db)
-    #target_db = add_sampling_key(target_db)
+        target_db = add_seasons(target_db)
+        target_db = add_sets(target_db, set_list)
+        target_db = add_sets_directly(target_db)
+        target_db = add_relationships_from_capacity(target_db)
+        target_db = add_node_technology(target_db)
+        target_db = add_params(target_db, param_listing)
+        target_db = add_general_params(target_db)
+        target_db = add_CO2_params(target_db)
+        #target_db = add_sampling_key(target_db)
