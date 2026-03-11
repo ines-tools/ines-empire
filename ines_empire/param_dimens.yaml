@@ -23,7 +23,7 @@ Generator:
   MaxInstalledCapacity: [Node, Technology]
   RampRate: [Generator]
   RefInitialCap: [Node, Generator]
-  ScaleFactorInitialCap : [Node, Generator]
+  ScaleFactorInitialCap : [Generator]
   VariableOMCosts: [Generator]
 Node:
   ElectricAnnualDemand: [Node]

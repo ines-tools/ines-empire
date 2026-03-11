@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import spinedb_api as api
 from spinedb_api import DatabaseMapping
 import sys
@@ -42,7 +44,7 @@ def write_sets(source_db, set_list):
             entities = source_db.get_entity_items(entity_class_name='__'.join(set_dimens))
             tab_file = set_header+ "_" + set_name + ".tab"
             if len(entities)>0:
-                with open(tab_files_path + tab_file, 'w+', newline='') as csv_file:
+                with open(Path(tab_files_path, tab_file), 'w+', newline='') as csv_file:
                     csv_writer = csv.writer(csv_file, dialect='excel-tab')
                     csv_writer.writerow(set_dimens)
                     for entity in entities:
@@ -56,7 +58,7 @@ def write_params(source_db, param_listing):
         for param_name, param_dimens in type_params.items():
             tab_file = type_name + "_" + param_name + ".tab"
             print(param_name)
-            with open(tab_files_path + tab_file, 'w+', newline="") as csv_file:
+            with open(Path(tab_files_path, tab_file), 'w+', newline="") as csv_file:
                 csv_writer = csv.writer(csv_file, dialect='excel-tab')
                 first_value = source_db.get_parameter_value_items(entity_class_name='__'.join(param_dimens), parameter_definition_name=param_name)[0]
                 param_value = api.from_database(first_value["value"], first_value["type"])
@@ -103,7 +105,7 @@ def write_general(source_db):
     for param_name, set_name in params_dict.items():
         tab_file = set_name[0] + "_" + param_name + ".tab"
         print(param_name)
-        with open(tab_files_path + tab_file, 'w+', newline="") as csv_file: 
+        with open(Path(tab_files_path, tab_file), 'w+', newline="") as csv_file:
             first_value = source_db.get_parameter_value_items(entity_class_name="General", parameter_definition_name=param_name)[0]
             param_value = api.from_database(first_value["value"], first_value["type"]) 
             csv_writer = csv.writer(csv_file, dialect='excel-tab')         
@@ -137,7 +139,7 @@ def write_CO2(source_db):
     for param_name, set_name in params_dict.items():
         tab_file = set_name[0] + "_"+ param_name + ".tab"
         print(param_name)
-        with open(tab_files_path + tab_file, 'w+', newline="") as csv_file:
+        with open(Path(tab_files_path, tab_file), 'w+', newline="") as csv_file:
             first_value = source_db.get_parameter_value_items(entity_class_name="CO2", parameter_definition_name=param_name)[0]
             param_value = api.from_database(first_value["value"], first_value["type"])     
             csv_writer = csv.writer(csv_file, dialect='excel-tab')       
@@ -163,21 +165,15 @@ def write_CO2(source_db):
         tab_file = set_info[0] + "_" + set_name + ".tab"
         entities = source_db.get_entity_items(entity_class_name="CO2SequestrationNodes")
         if len(entities)>0:
-            with open(tab_files_path + tab_file, 'w+', newline='') as csv_file:
+            with open(Path(tab_files_path, tab_file), 'w+', newline='') as csv_file:
                 csv_writer = csv.writer(csv_file, dialect='excel-tab')
                 csv_writer.writerow(set_info[1:])
                 for entity in entities:
                     csv_writer.writerow(entity["entity_byname"])
 
 def main():
+    print("Started reading database...")
     with DatabaseMapping(url_db) as source_db:
-        #scenarios = get_scenario(source_db)
-        #for scenario in scenarios:
-        #    scenario_name  = api.from_database(scenario["value"], scenario["type"])
-        #print(scenario_name)
-        #print(tab_files_path)
-        #tab_files_path = tab_files_path + scenario_name + "/"
-        #print(tab_files_path)
         write_sets(source_db, set_list)
         write_params(source_db, param_listing)
         write_general(source_db)
@@ -188,15 +184,16 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         url_db = sys.argv[1]
     else:
-        exit("Please give source database url as the first argument and the path to output folder as second argument")
+        sys.exit("Please give source database url as the first argument and the path to output folder as second argument")
     if len(sys.argv) > 2:
         tab_files_path = sys.argv[2]
     else:
-        exit("Please give source database url as the first argument and the path to output folder as second argument")
+        sys.exit("Please give source database url as the first argument and the path to output folder as second argument")
 
     if not os.path.exists(tab_files_path):
-        exit(f"Output folder {tab_files_path} does not exist. Please create it first or change the second argument to a path that exists.")
+        sys.exit(f"Output folder {tab_files_path} does not exist. Please create it first or change the second argument to a path that exists.")
     with open('param_dimens.yaml', 'r') as yaml_file:
         param_listing = yaml.safe_load(yaml_file)
     with open('sets.yaml', 'r') as yaml_file:
         set_list = yaml.safe_load(yaml_file)
+    main()
