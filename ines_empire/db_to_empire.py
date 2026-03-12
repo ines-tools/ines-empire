@@ -106,7 +106,12 @@ def write_general(source_db):
         tab_file = set_name[0] + "_" + param_name + ".tab"
         print(param_name)
         with open(Path(tab_files_path, tab_file), 'w+', newline="") as csv_file:
-            first_value = source_db.get_parameter_value_items(entity_class_name="General", parameter_definition_name=param_name)[0]
+            first_values = source_db.get_parameter_value_items(entity_class_name="General", parameter_definition_name=param_name)
+            if first_values:
+                first_value = first_values[0]
+            else:
+                print("Warning: No values found for parameter", param_name)
+                continue
             param_value = api.from_database(first_value["value"], first_value["type"]) 
             csv_writer = csv.writer(csv_file, dialect='excel-tab')         
             if isinstance(param_value, api.Map):
